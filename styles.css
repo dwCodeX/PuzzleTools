@@ -1,0 +1,570 @@
+<style>
+    #downloadProgressBar { width: 0%; }
+    #loadingBar { width: 0%; }
+    #domWatermark { display: none; }
+  </style>
+    <style>
+/* * ===================================================
+ * 🎨 主题颜色管理
+ * =================================================== */
+:root {
+    --color-primary: 10, 132, 255;
+    --color-primary-dark: 0, 105, 250;
+    --color-secondary: 220, 220, 225;
+    --color-secondary-dark: 209, 213, 219;
+    --color-body-bg: 247, 247, 250; 
+    --shadow-apple-soft: 0 1px 3px rgba(0, 0, 0, 0.08); 
+    --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.04); 
+    --mobile-padding: 0.5rem;
+    --mobile-btn-padding: 8px 12px;
+    --mobile-font-sm: 0.875rem;
+    --mobile-font-base: 1rem;
+    --control-gap: 0.5rem; /* 12px，四个元素统一间距 */
+    --control-gap-sm: 0.25rem; /* 8px，移动端统一间距 */
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+    background-color: rgb(var(--color-body-bg));
+    background-image: none;
+    transition: background-color 0.3s ease;
+    min-height: 100vh;
+}
+
+/* 基础样式工具类 */
+.shadow-apple { box-shadow: var(--shadow-card); }
+.bg-primary { background-color: rgb(var(--color-primary)); }
+.hover\:bg-primary-dark:hover { background-color: rgb(var(--color-primary-dark)); }
+.text-primary { color: rgb(var(--color-primary)); }
+.border-primary { border-color: rgb(var(--color-primary)); }
+.focus\:border-primary:focus { border-color: rgb(var(--color-primary)); }
+.bg-secondary { background-color: rgb(var(--color-secondary)); }
+.hover\:bg-secondary-dark:hover { background-color: rgb(var(--color-secondary-dark)); }
+
+/* ===================================================
+ * 基础组件样式
+ * =================================================== */
+.rect-container { 
+    position: relative; 
+    overflow: hidden; 
+    background-color: #ffffff; 
+    cursor: default; 
+}
+.rect-item { position: absolute; overflow: hidden; display: flex; justify-content: center; align-items: center; background-color: transparent; cursor: pointer; }
+.rect-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
+.rect-item:hover img { transform: scale(1.05); }
+.fade-in { animation: fadeIn 0.5s ease-out; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* 🚀 DOM 水印层样式 */
+#domWatermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 50; 
+    font-weight: bold;
+    text-align: center;
+    -webkit-text-stroke: 1px rgba(255, 255, 255, 0.9);
+    text-stroke: 1px rgba(255, 255, 255, 0.9);
+    color: rgba(var(--color-primary), 0.9); 
+    opacity: 0.9;
+    pointer-events: none; 
+    user-select: none;
+}
+
+/* ===================================================
+ * 控制栏布局优化
+ * =================================================== */
+.controls-bar {
+    display: flex;
+    align-items: center; /* 垂直居中 */
+    justify-content: center; /* 整体居中 */
+    gap: 4px !important;
+    box-sizing: border-box;
+    padding: var(--control-gap-sm) 0 !important; /* 清除左右padding，避免父容器宽度被压缩 */
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.controls-bar .stats-group,
+.controls-bar .actions-group {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: var(--control-gap);
+}
+
+#leftControls, #rightControls {
+    display: flex;
+    align-items: center;
+    gap: var(--control-gap);
+    width: auto;
+}
+
+.controls-bar > * {
+    margin: 0 !important; /* 清除所有子元素自带margin */
+    flex-shrink: 0; /* 防止元素被挤压变形 */
+}
+
+/* 右侧操作区专项优化 */
+#rightControls {
+    justify-content: flex-end;
+    padding: 0;
+    margin: 0;
+}
+
+#rightControls > * {
+    margin: 0 !important;
+    flex-shrink: 0;
+}
+
+#rightControls .route-input-base {
+    min-height: 34px;
+    width: 130px !important; /* 覆盖通用样式 */
+}
+
+#rightControls .primary-capsule-btn {
+    min-height: 34px;
+    padding: 6px 18px;
+}
+
+/* ===================================================
+ * 按钮和输入框样式 
+ * =================================================== */
+/* 基础按钮样式（统一继承属性） */
+.btn-base {
+    font-family: inherit;
+    transition: all 0.3s ease-out;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+.btn-base:disabled {
+    cursor: not-allowed;
+    opacity: 1;
+    transform: none;
+    box-shadow: none;
+}
+
+/* 1. 主按钮（选择图片文件） */
+.primary-btn { 
+    @apply btn-base;
+    font-weight: 600; 
+    border-radius: 1rem; 
+    padding: 12px 20px; 
+    color: white; 
+    background-color: rgb(var(--color-primary)); 
+    box-shadow: 0 4px 10px rgba(var(--color-primary), 0.3); 
+    border: none; 
+}
+@media (min-width: 640px) { 
+    .primary-btn { 
+        font-size: 1.875rem; 
+        padding: 15px 25px;
+    } 
+    .controls-bar { flex-wrap: nowrap; }
+}
+@media (max-width: 639px) {
+    .primary-btn { 
+        font-size: 1.5rem; 
+        padding: 10px 16px;
+    }
+}
+.primary-btn:disabled { 
+    background-color: rgb(var(--color-secondary-dark)); 
+    color: #9ca3af; 
+}
+.primary-btn:hover:not(:disabled) { 
+    background-color: rgb(var(--color-primary-dark)); 
+    box-shadow: 0 6px 15px rgba(var(--color-primary-dark), 0.4); 
+    transform: translateY(-1px); 
+}
+.primary-btn:active:not(:disabled) { 
+    background-color: rgb(var(--color-primary-dark)); 
+    box-shadow: 0 2px 5px rgba(var(--color-primary), 0.2); 
+    transform: translateY(0); 
+}
+
+/* 2. 胶囊主按钮（添加图片/下载拼图） */
+.primary-capsule-btn { 
+    @apply btn-base;
+    font-weight: 600;
+    border-radius: 12px; 
+    font-size: 18px; 
+    padding: 6px 16px; 
+    min-height: 34px; 
+    color: white; 
+    background-image: linear-gradient(to top, rgb(var(--color-primary-dark)) 0%, rgb(var(--color-primary)) 100%); 
+    box-shadow: 0 2px 8px rgba(var(--color-primary), 0.4); 
+}
+.primary-capsule-btn:disabled { 
+    background-color: rgb(var(--color-secondary-dark)); 
+    background-image: none; 
+    color: #9ca3af; 
+}
+
+/* 3. 次要按钮基础样式 */
+.secondary-btn { 
+    @apply btn-base;
+    font-weight: 600;
+    font-size: 16px; 
+    padding: 6px 12px; 
+    min-height: 34px; 
+    color: rgb(var(--color-primary)); 
+    background: white; 
+    border: 2px solid rgb(var(--color-secondary)); 
+    box-shadow: var(--shadow-apple-soft); 
+    border-radius: 8px; 
+    gap: 4px;
+    margin: 0;
+}
+.secondary-btn:hover:not(:disabled) { 
+    background-color: rgb(var(--color-body-bg)); 
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); 
+}
+
+/* 4. 操作按钮（主题/刷新/清空） */
+.rect-action-btn {
+    @apply secondary-btn;
+    padding: 4px 8px;
+}
+.rect-action-btn i {
+    font-size: 2rem !important;
+}
+
+/* 5. 布局/清晰度选择器按钮 */
+.ratio-quality-btn {
+    @apply secondary-btn;
+    padding: 4px 12px;
+    border: 2px solid rgb(var(--color-secondary));
+    border-left: none;
+    border-radius: 0;
+    font-size: 14px; 
+}
+.ratio-quality-btn:first-of-type {
+    border-left: 2px solid rgb(var(--color-secondary));
+    border-top-left-radius: 9999px;
+    border-bottom-left-radius: 9999px;
+}
+.ratio-quality-btn:last-of-type {
+    border-top-right-radius: 9999px;
+    border-bottom-right-radius: 9999px;
+}
+.ratio-quality-btn.active {
+    @apply primary-capsule-btn;
+    background-image: linear-gradient(to top, rgb(var(--color-primary-dark)) 0%, rgb(var(--color-primary)) 100%);
+    padding: 4px 12px;
+    border: 2px solid rgb(var(--color-primary));
+    color: white;
+    box-shadow: 0 2px 8px rgba(var(--color-primary), 0.4);
+    z-index: 1;
+    margin: 0;
+}
+.ratio-quality-btn.active:first-of-type {
+    border-top-left-radius: 9999px;
+    border-bottom-left-radius: 9999px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+.ratio-quality-btn.active:last-of-type {
+    border-top-right-radius: 9999px;
+    border-bottom-right-radius: 9999px;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+.ratio-quality-btn.active:not(:first-of-type):not(:last-of-type) {
+    border-radius: 0;
+}
+.ratio-quality-btn.active:only-child {
+    border-radius: 9999px;
+}
+.ratio-quality-btn.active ~ .ratio-quality-btn:not(.active) { 
+    border-left: 2px solid rgb(var(--color-secondary));
+}
+
+.route-input-base { 
+    width: 130px !important;
+    max-width: 120px;
+    min-height: 34px;
+    padding: 6px 8px !important; /* 增加左右内边距，优化输入体验 */
+    border: 2px solid rgb(var(--color-secondary));
+    border-radius: 12px;
+    font-size: 0.8rem !important; /* 从2rem改为1.2rem，适配输入框高度 */
+    text-align: center;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+    vertical-align: middle;
+    line-height: 1.2;
+    resize: none; /* 禁止拉伸，避免高度异常 */
+    box-sizing: border-box;
+    transition: all 0.15s ease;
+    outline: none;
+}
+.route-input-base:focus { 
+    border-color: rgb(var(--color-primary)); 
+    box-shadow: 0 0 0 3px rgba(var(--color-primary), 0.3), inset 0 1px 2px rgba(0, 0, 0, 0.05); 
+}
+.route-input-base::-webkit-input-placeholder,
+.route-input-base:-ms-input-placeholder,
+.route-input-base::placeholder { 
+    text-align: center; 
+    color: #9ca3af; 
+    line-height: inherit;
+    vertical-align: middle;
+}
+
+/* 7. 动画与错误样式 */
+.animate-pulse-primary { 
+    animation: pulse-primary 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; 
+}
+@keyframes pulse-primary { 
+    0%, 100% { box-shadow: 0 0 0 0 rgba(var(--color-primary), 0.7); } 
+    50% { box-shadow: 0 0 0 8px rgba(var(--color-primary), 0); } 
+}
+.border-error { border-color: rgb(var(--color-primary)); }
+
+/* 8. 图标按钮专用样式 */
+.icon-btn {
+    @apply primary-capsule-btn;
+    border-radius: 8px;
+    padding: 8px 12px;
+    min-width: 44px;
+}
+
+/* 9. 顶部添加图片按钮 */
+#fileInputTopLabel.primary-capsule-btn {
+    padding: 6px 16px;
+}
+
+/* 10. 下载按钮统一样式 */
+#downloadBtn.primary-capsule-btn,
+#rightControls #downloadBtn.primary-capsule-btn {
+    padding: 6px 18px;
+    box-shadow: 0 2px 8px rgba(var(--color-primary), 0.4);
+    min-width: auto;
+}
+
+/* ===================================================
+ * 移动端适配（合并所有小屏幕样式）
+ * =================================================== */
+@media (max-width: 640px) {
+    /* 容器宽度调整 */
+    .w-full.max-w-\[66\.6666\%\] {
+        max-width: 96% !important;
+    }
+    
+    #imageContainerParent {
+        max-width: 100% !important; /* 占满手机屏幕宽度 */
+        padding: 2px !important; /* 减少内边距，避免留白 */
+        min-height: 300px !important; /* 空状态默认高度 */
+        display: flex !important; /* 空状态内容居中 */
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    
+    .rect-container {
+        width: 100% !important; /* 拼图容器宽度自适应 */
+    }
+    
+    /* 模态框调整 */
+    #imageModal > div {
+        max-width: 96% !important;
+        max-height: 95vh !important;
+    }
+    
+    .p-4 {
+        padding: 0.75rem !important;
+    }
+    
+    #modalImage {
+        max-height: 60vh !important;
+    }
+    
+    .flex-wrap > div {
+        width: 100% !important;
+        justify-content: center !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    /* 操作按钮调整 */
+    .rect-action-btn {
+        padding: 5px 10px !important;
+    }
+    
+    .rect-action-btn i {
+        font-size: 0.9rem !important;
+    }
+    
+    /* 输入框基础样式 */
+    .route-input-base {
+        width: 100px !important;
+        margin: 0 !important;
+    }
+    
+    /* 下载按钮调整 */
+    #rightControls #downloadBtn.primary-capsule-btn {
+        border-radius: 1rem !important;
+        padding: 4px 8px !important;
+        min-width: 36px !important;
+    }
+    
+/* ==============================================
+ * 核心：控制栏（数量/像素/布局/清晰度）样式
+ * ============================================== */
+/* 1. 控制栏整体容器 */
+.controls-bar {
+    padding: var(--control-gap-sm) 4px !important; /* 减少左右留白 */
+    gap: 5px !important; /* 缩小控制栏左右区域间距 */
+}
+
+/* 2. 左侧核心内容区父容器（已整合对齐核心规则） */
+.controls-bar .stats-row {
+    display: flex !important;
+    flex-wrap: nowrap !important; /* 不换行 */
+    align-items: center !important; /* 所有子元素垂直居中（核心） */
+    line-height: 1.2 !important; /* 统一行高，避免文字/按钮高低不一 */
+    justify-content: flex-start !important; /* 左对齐 */
+    width: 100% !important; /* 拉满宽度 */
+    max-width: 100% !important;
+    overflow-x: auto !important; /* 超宽横向滚动 */
+    overflow-y: hidden !important; /* 禁止垂直滚动 */
+    padding: 2px 0 !important;
+    margin: 0 !important;
+    gap: 5px !important; /* 统一子元素间距（数量/像素/布局之间） */
+    scrollbar-width: thin !important; /* 细滚动条 */
+}
+
+/* 滚动条样式 */
+.controls-bar .stats-row::-webkit-scrollbar {
+    height: 4px !important;
+}
+.controls-bar .stats-row::-webkit-scrollbar-thumb {
+    background-color: rgba(0,0,0,0.1) !important;
+    border-radius: 2px !important;
+}
+
+/* 3. 子元素统一处理（清除垂直干扰+对齐继承） */
+.stats-row > * {
+    margin: 0 !important;
+    padding: 0 !important;
+    flex-shrink: 0 !important; /* 不被挤压 */
+    line-height: inherit !important; /* 继承父容器行高，避免文字偏移 */
+    vertical-align: middle !important; /* 兼容inline元素对齐 */
+}
+
+/* 新增：单独缩小“布局”和“清晰度”之间的间距 */
+.stats-row > div + div {
+    margin-left: 2px !important; /* 比其他元素间距小，确保紧凑 */
+}
+
+/* 4. 数量/像素文本样式（确保与按钮对齐） */
+.controls-bar .stats-row p {
+    white-space: nowrap !important; /* 不换行 */
+    font-size: 11px !important;
+    padding: 2px 0 !important;
+    line-height: 1.2 !important; /* 与按钮行高匹配 */
+    height: auto !important; /* 清除固定高度，避免挤压 */
+    align-self: center !important; /* 强制垂直居中，优先级最高 */
+}
+
+/* 数量/像素中的数字样式 */
+.controls-bar .stats-row p #imageCount,
+.controls-bar .stats-row p #rectDimensions {
+    font-size: 11px !important; /* 与文字同尺寸，不突出 */
+}
+
+/* 5. 布局/清晰度分组容器（与文本对齐） */
+.controls-bar .stats-row > div {
+    padding: 2px 0 !important;
+    width: auto !important; /* 宽度随内容变化，不强制固定 */
+    height: auto !important; /* 清除固定高度 */
+    align-self: center !important; /* 强制垂直居中，与p标签对齐 */
+}
+
+/* 6. 布局/清晰度文字样式 */
+.stats-row span {
+    white-space: nowrap !important;
+    font-size: 11px !important;
+    margin-right: 2px !important; /* 文字与按钮间隙 */
+}
+
+/* 7. 布局/清晰度按钮样式（匹配文本高度） */
+.ratio-quality-btn {
+    min-width: 28px !important; /* 固定宽度，确保能放下文字 */
+    white-space: nowrap !important; /* 按钮文字不换行 */
+    font-size: 10px !important; /* 缩小文字，省空间 */
+    padding: 2px 4px !important; /* 压缩内边距，减少横向占用 */
+    line-height: 1.2 !important; /* 与p标签行高一致，避免上下偏移 */
+    height: auto !important; /* 清除固定高度，由内容决定 */
+    border: 2px solid rgb(var(--color-secondary)) !important;
+}
+
+/* 修正：选中按钮样式（原类名多写一个"quality"，已修正） */
+.ratio-quality-btn.active {
+    background-image: linear-gradient(to top, rgb(var(--color-primary-dark)) 0%, rgb(var(--color-primary)) 100%) !important;
+    border-color: rgb(var(--color-primary)) !important;
+    color: white !important;
+}
+
+/* ==============================================
+ * 右侧操作区样式
+ * ============================================== */
+#leftControls, #rightControls {
+    gap: var(--control-gap-sm);
+    width: 100%;
+    justify-content: center;
+}
+
+#rightControls {
+    margin-top: var(--control-gap-sm) !important;
+    gap: 4px !important; /* 缩小输入框与下载按钮间距 */
+}
+
+#rightControls .route-input-base {
+    width: 120px !important;
+}
+
+#rightControls .primary-capsule-btn {
+    padding: 4px 12px !important;
+}
+
+/* 统一按钮文本大小 */
+.primary-capsule-btn {
+    font-size: 16px !important;
+}
+
+/* 页面高度基础样式 */
+html, body {
+    height: 100%; /* 占满屏幕高度 */
+}
+
+footer {
+    height: 60px !important; /* 固定版权区高度 */
+}
+
+/* 语录容器及父元素强制可见 */
+#quoteWrapper,
+#quoteWrapper > div,
+#currentQuote {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 100 !important; /* 确保在最上层，不被遮挡 */
+  height: auto !important;
+  overflow: visible !important;
+}
+
+/* 语录文字样式（确保能看清） */
+#currentQuote {
+  color: #555 !important; /* 深灰色，避免与背景融合 */
+  font-size: 16px !important;
+  padding: 10px 0 !important;
+  margin: 0 !important;
+  text-align: center !important;
+  line-height: 1.5 !important;
+}
+     
+    </style>
