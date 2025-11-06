@@ -1,37 +1,111 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>深高创新•学生义工拼图工具 v1.0.6.2511</title>
-    <!-- 外部CDN资源（保留原引用，无需改动） -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
-    <!-- 引用外部CSS（关键：路径为根目录的styles.css） -->
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>拼图工具 v1.0.6 - 在线拼图合成</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+  
+  <link rel="stylesheet" href="css/styles.css">
 </head>
-<body class="min-h-screen flex flex-col">
-    <!-- 原HTML的所有<body>内容完全保留，不做修改 -->
-    <div class="w-full sticky top-0 z-10 max-w-[66.6666%] mx-auto">
-        <header class="bg-white shadow-apple rounded-xl border-b border-gray-100 w-full">
-            <!-- 原头部内容... -->
-        </header>
+<body>
+  <div class="container mx-auto px-4 py-8">
+    <div class="text-center mb-8">
+      <h1 class="text-title">拼图工具 v1.0.6</h1>
+      <div class="text-desc">支持多张图片自由拖拽、拼接与下载。图片自动自适应布局，支持JPEG/PNG/WEBP格式。</div>
     </div>
 
-    <main class="flex-grow pb-4"> 
-        <!-- 原主体内容... -->
-    </main>
+    <div id="emptyState" class="shadow-soft rounded-lg">
+      <svg class="mx-auto h-20 w-20 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-12 5h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+      </svg>
+      <p class="text-2xl sm:text-3xl font-black text-gray-800">拖拽图片到此处上传</p>
+      <p class="text-base text-gray-500 mb-2">（支持多张图片同时上传，文件格式：JPEG/PNG/WEBP）</p>
+      <label for="fileInput" id="emptyStateUploadLabel" class="primary-btn rounded-full">
+        <i class="fa fa-upload"></i> 选取图片
+      </label>
+      <input type="file" id="fileInput" multiple class="hidden" accept="image/*"/>
+    </div>
+
+    <div id="imageContainerParent" class="flex justify-center items-center bg-white p-2 sm:p-4 rounded-2xl shadow-apple relative w-full mt-1.5 min-h-80">
+      <div id="rectContainer" class="rect-container shadow-inner border-2 border-gray-200 rounded-lg">
+        <div id="domWatermark" class="text-4xl"></div>
+      </div>
+      <div id="downloadOverlay" class="hidden absolute inset-0 bg-white/90 backdrop-blur-sm z-20 rounded-2xl flex-col justify-center items-center p-8 text-center space-y-4"></div>
+      <div id="loadingState" class="hidden absolute inset-0 bg-white/90 z-10 flex flex-col justify-center items-center p-8 text-center space-y-4 rounded-2xl"></div>
+    </div>
+
+    <div id="statsBar" class="bg-white p-1 rounded-2xl shadow-apple w-full flex flex-col gap-1 mt-1 hidden">
+      <div class="controls-bar flex flex-wrap justify-between items-center gap-x-2 gap-y-1">
+        <div class="flex items-center gap-0">
+          <span class="font-semibold text-gray-700 mr-1 text-xs sm:text-lg">宽高比:</span>
+          <input type="radio" name="aspectRatio" id="ratio-16-9" value="16:9" class="hidden">
+          <label for="ratio-16-9" class="ratio-quality-btn cursor-pointer text-xs" data-value="16:9" data-group="aspectRatio">16:9</label>
+          <input type="radio" name="aspectRatio" id="ratio-4-3" value="4:3" class="hidden" checked>
+          <label for="ratio-4-3" class="ratio-quality-btn cursor-pointer text-xs" data-value="4:3" data-group="aspectRatio">4:3</label>
+          <input type="radio" name="aspectRatio" id="ratio-1-1" value="1:1" class="hidden">
+          <label for="ratio-1-1" class="ratio-quality-btn cursor-pointer text-xs" data-value="1:1" data-group="aspectRatio">1:1</label>
+        </div>
+
+        <div class="flex items-center gap-0">
+          <span class="font-semibold text-gray-700 mr-1 text-xs sm:text-lg">质量:</span>
+          <input type="radio" name="renderQuality" id="quality-1x" value="1" class="hidden">
+          <label for="quality-1x" class="ratio-quality-btn cursor-pointer text-xs" data-value="1" data-group="renderQuality">1x</label>
+          <input type="radio" name="renderQuality" id="quality-2x" value="2" class="hidden" checked>
+          <label for="quality-2x" class="ratio-quality-btn cursor-pointer text-xs" data-value="2" data-group="renderQuality">2x</label>
+          <input type="radio" name="renderQuality" id="quality-3x" value="3" class="hidden">
+          <label for="quality-3x" class="ratio-quality-btn cursor-pointer text-xs" data-value="3" data-group="renderQuality">3x</label>
+        </div>
+
+        <textarea id="routeNumberInput" placeholder="输入水印文字（可选）" maxlength="130" rows="1" class="route-input-base text-xs"></textarea>
+        <button id="downloadBtn" class="primary-capsule-btn text-xs"><i class="fa fa-download"></i> 下载拼图</button>
+      </div>
+    </div>
 
     <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-md hidden flex items-center justify-center z-50 p-4" aria-modal="true" role="dialog">
-        <!-- 原模态框内容... -->
+      <div class="relative bg-white rounded-2xl w-full max-w-screen-xl max-h-90vh flex flex-col shadow-apple">
+        <div class="p-4 border-b flex justify-between items-center bg-gray-50/50 rounded-t-2xl h-3">
+          <h3 id="imageName" class="text-lg sm:text-xl font-bold truncate"></h3>
+          <button id="closeModal" class="secondary-btn p-2 rounded-full text-gray-500 hover:text-gray-800 transition" title="关闭">
+            <i class="fa fa-times text-base"></i>
+          </button>
+        </div>
+        <div class="relative flex-grow overflow-hidden flex items-center justify-center p-0 sm:p-4">
+          <img id="modalImage" src="" alt="预览" class="object-contain max-h-full max-w-full">
+        </div>
+        <div class="p-4 border-t flex justify-between items-center flex-wrap space-y-2 sm:space-y-0 text-sm sm:text-base bg-gray-50/50 rounded-b-2xl">
+          <div class="flex items-center space-x-4 text-gray-600">
+            <p><span id="modalImgSize" class="font-semibold"></span></p>
+            <p><span id="modalImgRatio" class="font-semibold"></span></p>
+          </div>
+          <div class="flex items-center space-x-3">
+            <button id="downloadSingleBtn" class="secondary-btn"><i class="fa fa-download mr-1"></i>下载</button>
+            <button id="deleteSingleBtn" class="secondary-btn"><i class="fa fa-trash mr-1"></i>删除</button>
+          </div>
+          <div class="flex items-center space-x-4 ml-auto sm:ml-0 mt-2 sm:mt-0">
+            <button id="prevImageBtn" class="secondary-btn p-2 rounded-full disabled:opacity-50 transition" title="上一张">
+              <i class="fa fa-arrow-left"></i>
+            </button>
+            <span class="font-bold text-gray-700"><span id="currentImageIndex">1</span> / <span id="totalImageCount">1</span></span>
+            <button id="nextImageBtn" class="secondary-btn p-2 rounded-full disabled:opacity-50 transition" title="下一张">
+              <i class="fa fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <footer class="p-3 text-center text-sm text-gray-500">
-        <p id="copyrightFooter"></p>
-    </footer>
+  <footer class="p-3 text-center text-sm text-gray-500">
+    <p id="copyrightFooter">© 2024 Pin Tu Gong Ju</p>
+    <p id="currentQuote" class="transition-opacity duration-1000 opacity-100 p-4 text-sm sm:text-base text-gray-500"></p>
+  </footer>
 
-    <!-- 引用外部JS（关键：放在body末尾，路径为根目录的script.js） -->
-    <script src="script.js"></script>
+  <script src="js/gallery-optimizer.js"></script>
+  <script src="js/ui-controller.js"></script>
+  <script src="js/main.js"></script>
 </body>
 </html>
